@@ -10,13 +10,16 @@ class Word2Vec:
     Output: predict context words
     """
 
-    def __init__(self, window_size: int = 5):
+    def __init__(self, window_size: int = 5, embedding_dim: int = 300):
         if window_size <= 0:
             raise ValueError("window_size must be > 0")
         self.window_size = window_size
-        self.tokens: np.ndarray[np.uint32] | None = None  # Tokenized corpus
-        self.vocab_dict: dict[str, int] | None = None
-        # self.vocabulary: np.ndarray | None = None
+        if embedding_dim <= 0:
+            raise ValueError("embedding_dim must be > 0")
+        self.embedding_dim = embedding_dim
+
+        self.tokens = None  # Tokenized corpus
+        self.vocab_dict = None
 
 
     @staticmethod
@@ -27,48 +30,28 @@ class Word2Vec:
         return words
 
 
-    # @staticmethod
-    # def words_to_dict(words: list[str]) -> dict[str, int]:
-    #     vocab_dict = {}
-    #     for word in words:
-    #         if word not in vocab_dict:
-    #             vocab_dict[word] = len(vocab_dict)
-    #     return vocab_dict
-    
-
-    # @staticmethod
-    # def dict_to_vectors(vocab_dict: dict[str, int]) -> np.ndarray:
-    #     vocab_size = len(vocab_dict)
-    #     # Create a vocab_size x vocab_size identity matrix (one-hot vectors)
-    #     return np.eye(vocab_size)
-
-
-    def build_vocab(self, words: str) -> None:
+    def build_vocab(self, words: list[str]) -> None:
         self.vocab_dict = {}
         for word in words:
             if word not in self.vocab_dict:
                 self.vocab_dict[word] = len(self.vocab_dict)
 
 
-    # def build_vocabulary(self) -> None:
-    #     if self.vocab_dict is None:
-    #         raise ValueError("vocab_dict is not built. Call build_dict() first.")
-    #     self.vocabulary = self.dict_to_vectors(self.vocab_dict)
-
-
     def tokenize(self, corpus: str) -> None:
         if self.vocab_dict is None:
-            raise ValueError("vocab_dict is not built. Call build_dict() first")
+            raise ValueError("vocab_dict is not built. Call build_vocab() first")
         self.tokens = np.array([self.vocab_dict[word] for word in corpus], dtype=np.uint32)
 
 
     def generate_training_pairs(self):
-        for i in range(len(self.tokens)):
-            left = max(i - self.window_size, 0)
-            right = min(i + self.window_size, len(self.tokens))
-            for token in self.tokens[left: right]:
-                if self.tokens[i] == token: continue
-                else: yield np.array((self.tokens[i], token))
+        if self.tokens is None:
+            raise ValueError("Tokens is not built. Call tokenize() first.")
+        for word in range(len(self.tokens)):
+            for offset in range(-self.window_size, self.window_size + 1):
+                if offset == 0: continue
+                context = word + offset
+                if 0 <= context < len(self.tokens):
+                    yield np.array((self.tokens[word], self.tokens[context]))
 
 
     def train(self, corpus: str, epochs: int) -> None:
