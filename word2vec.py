@@ -10,14 +10,16 @@ class Word2Vec:
     Output: predict context words
     """
 
-    def __init__(self, window_size: int = 5, embedding_dim: int = 300):
+    def __init__(self, window_size: int = 5, embedding_dim: int = 300, learning_rate: float = 0.025):
         if window_size <= 0:
             raise ValueError("window_size must be > 0")
         self.window_size = window_size
         if embedding_dim <= 0:
             raise ValueError("embedding_dim must be > 0")
         self.embedding_dim = embedding_dim
-
+        self.learning_rate = learning_rate
+        self.W_in = None # input matrix
+        self.W_out = None # output matrix
         self.tokens = None  # Tokenized corpus
         self.vocab_dict = None
 
@@ -37,7 +39,7 @@ class Word2Vec:
                 self.vocab_dict[word] = len(self.vocab_dict)
 
 
-    def tokenize(self, corpus: str) -> None:
+    def tokenize(self, corpus: list[str]) -> None:
         if self.vocab_dict is None:
             raise ValueError("vocab_dict is not built. Call build_vocab() first")
         self.tokens = np.array([self.vocab_dict[word] for word in corpus], dtype=np.uint32)
@@ -96,7 +98,19 @@ class Word2Vec:
         pass
 
 
-    def evaluate(self):
+    def evaluate(self) -> float:
         """Evaluate model performance"""
-        pass
-    
+        total_loss = 0.0
+        count = 0
+        for word, context in self.generate_training_pairs():
+            hidden = self.W_in[word]
+            logits = hidden @ self.W_out
+            prob = self.softmax(logits)
+
+            # cross-entropy loss: -log(prob of true context word)
+            total_loss += -np.log(prob[context] + 1e-9)   # 1e-9 avoids log(0)
+            count += 1
+
+        avg_loss = total_loss / count
+        print(f"Average loss: {avg_loss:.4f}")
+        return avg_loss
