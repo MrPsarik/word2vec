@@ -82,22 +82,13 @@ class Word2Vec:
         self.build_vocab(words)
         self.tokenize(words)
 
+        self.W_in = np.random.uniform(-1, 1, (len(self.vocab_dict), self.embedding_dim))
+        self.W_out = np.random.uniform(-1, 1, (self.embedding_dim, len(self.vocab_dict)))
+
         for epoch in range(epochs):
             print(f"Training epoch {epoch+1}/{epochs}")
-            # forward pass
-            # negative sampling
-            # loss
-            # backward pass
-        
-
-    # Neural Network Architecture 
-    # Input layer: one-hot vector of size V
-    # Hidden layer: linear layer of size 300 (hyperparameter)
-    # Output layer: softmax over V classes
-
-    # Two weight matrices:
-    # W (size V x N) input embedding matrix
-    # W' (size N x V) output embedding matrix
+            self.train_step()
+            self.evaluate()
 
 
     def predict(self):
