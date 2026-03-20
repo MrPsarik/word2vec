@@ -53,6 +53,28 @@ class Word2Vec:
                 if 0 <= context < len(self.tokens):
                     yield np.array((self.tokens[word], self.tokens[context]))
 
+    
+    def softmax(self, vector: np.array) -> np.ndarray:
+        return np.exp(vector) / np.sum(np.exp(vector))
+    
+
+    def train_step(self) -> None:
+        for word, context in self.generate_training_pairs():
+            hidden = self.W_in[word]
+            logits = hidden @ self.W_out
+            prob = self.softmax(logits)
+
+            target = np.zeros(len(self.vocab_dict))
+            target[context] = 1
+
+            error = prob - target
+
+            dW_out = np.outer(hidden, error)
+            d_hidden = self.W_out @ error 
+
+            self.W_out -= self.learning_rate * dW_out
+            self.W_in[word] -= self.learning_rate * d_hidden
+
 
     def train(self, corpus: str, epochs: int) -> None:
         """Fit the model to the given data"""
